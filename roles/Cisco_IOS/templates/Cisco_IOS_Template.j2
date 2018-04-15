@@ -1,0 +1,139 @@
+no vstack
+
+no service config   ! default
+
+no service pad
+
+service tcp-keepalives-in
+service tcp-keepalives-out
+
+service timestamps debug datetime msec localtime show-timezone
+service timestamps log datetime msec localtime show-timezone
+
+service password-encryption
+
+no service dhcp
+
+hostname {{ inventory_hostname }}
+ip domain name {{ DOMAIN_NAME }}
+
+logging buffered {{ LOG_BUFFER_SIZE }} informational
+no logging console
+no logging monitor
+
+enable secret {{ ENABLE_SECRET }}
+username {{ USER_LOCAL_NAME }} privilege 1 secret {{ USER_LOCAL_PASS }}
+aaa new-model
+! LOCAL AUTHENTICATION ONLY:
+aaa authentication login default local
+aaa authentication enable default enable
+
+clock timezone UTC 0 0   ! default
+
+no ip source-route
+no ip finger   ! default
+ip dhcp bootp ignore
+no ip bootp server
+no ip domain-lookup
+
+crypto key generate rsa general-keys modulus 4096
+
+archive
+ log config
+  logging enable
+  hidekeys
+ path flash:cfg-archive
+ maximum 3   ! default
+ write-memory   ! default
+
+spanning-tree mode rapid-pvst
+spanning-tree extend system-id
+spanning-tree vlan 1-4094 priority {{ STP_PRIORITY }}
+
+vlan internal allocation policy ascending
+cdp run
+no lldp run   ! default
+
+interface {{ INT_MGMT }}   ! loopback on routers or SVI on switches
+ ip address {{ INT_MGMT_IP_ADDRESS }} {{ INT_MGMT_IP_SUBNETMASK }}
+ no ip redirects
+ no ip proxy-arp
+ no ip directed-broadcast   ! default
+ no shutdown
+
+no ip http server
+no ip http secure-server
+
+ip ftp source-interface {{ INT_MGMT }}
+ip tftp source-interface {{ INT_MGMT }}
+
+ip ssh time-out {{ SSH_TIMEOUT }}
+ip ssh source-interface {{ INT_MGMT }}
+ip ssh authentication-retries 3   ! default
+ip ssh version 2
+ip scp server enable
+
+ip access-list standard {{ ACL_SNMP }}
+ permit host {{ MONITORING_SERVER }}
+ deny   any log
+
+ip access-list standard {{ ACL_VTY }}
+ permit host {{ MANAGEMENT_SERVER }}
+ deny   any log
+
+logging trap informational   ! default
+logging source-interface {{ INT_MGMT }}
+logging host {{ LOGGING_SERVER }}
+
+no snmp-server community private
+no snmp-server community public
+no snmp-server enable traps
+snmp-server group {{ SNMP_V3_GROUP }} v3 priv
+snmp-server user {{ SNMP_V3_USER }} {{ SNMP_V3_GROUP }} v3 auth sha {{ SNMP_V3_AUTH_PASS }} priv aes 128 {{ SNMP_V3_PRIV_PASS }} access {{ ACL_SNMP }}
+
+! banner Tokens: $(hostname) $(domain) $(line) $(line-desc)
+banner exec !
+{{ BANNER_EXEC }}
+!
+banner incoming !
+{{ BANNER_INCOMING }}
+!
+banner login !
+{{ BANNER_LOGIN }}
+!
+banner motd !
+{{ BANNER_MOTD }}
+!
+configuration mode exclusive
+
+line con 0
+ login authentication default   ! default
+ exec-timeout {{ LINE_EXEC_TIMEOUT }}
+line aux 0
+ no password   ! default
+ exec-timeout 0 1
+ no exec  
+ transport input none   ! default
+ transport output none
+line vty 0 4
+ access-class {{ ACL_VTY }} in
+ transport input ssh
+ exec-timeout {{ LINE_EXEC_TIMEOUT }}
+ login authentication default   ! default
+line vty 5 15
+ no password   ! default
+ exec-timeout 0 1
+ no exec
+ transport input none
+ transport output none
+!
+ntp source {{ INT_MGMT }}
+ntp server {{ NTP_SERVER }}
+# authenticated NTP, if available
+!ntp authenticate
+!ntp authentication-key NTP-KEY-ID md5 NTP-KEY-KEY 
+!ntp trusted-key NTP-KEY-ID
+!ntp server ntp-server_ip_address key ntp_key_id
+!
+
+end

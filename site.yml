@@ -1,0 +1,9 @@
+---
+
+- name: Apply template to all nodes
+  hosts: all
+  connection: local
+  gather_facts: no
+
+  roles:
+    - Cisco_IOS

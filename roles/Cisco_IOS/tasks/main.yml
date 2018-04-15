@@ -1,0 +1,5 @@
+---
+  - name: Build Cisco IOS Template
+    template:
+      src=Cisco_IOS_Template.j2
+      dest={{ playbook_dir }}/configs/{{ inventory_hostname }}.conf
