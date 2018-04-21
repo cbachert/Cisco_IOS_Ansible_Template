@@ -1,0 +1,25 @@
+no vstack
+
+spanning-tree mode rapid-pvst
+spanning-tree loopguard default
+spanning-tree portfast default
+spanning-tree portfast bpduguard default
+spanning-tree extend system-id
+spanning-tree vlan 1-4094 priority {{ STP_PRIORITY }}
+
+vlan internal allocation policy ascending
+
+! Access-interface (non-infrastructure):
+ description ACCESS-{{ IF_ACCESS_VLAN }}
+ switchport mode access
+ switchport access vlan {{ IF_ACCESS_VLAN }}
+ no cdp enable
+
+! Trunk-interface:
+ description UPLINK-{{ IF_NEIGHBOUR }}
+ switchport trunk encapsulation dot1q
+ switchport mode trunk
+ switchport trunk allowed vlan {{ IF_ALLOWED_VLANS }}
+ cdp enable
+
+ip default-gateway {{ DEFAULT_GATEWAY }}

@@ -1,5 +1,3 @@
-no vstack
-
 no service config   ! default
 
 no service pad
@@ -49,29 +47,8 @@ archive
  maximum 3   ! default
  write-memory   ! default
 
-spanning-tree mode rapid-pvst
-spanning-tree loopguard default
-spanning-tree portfast default
-spanning-tree portfast bpduguard default
-spanning-tree extend system-id
-spanning-tree vlan 1-4094 priority {{ STP_PRIORITY }}
-
-vlan internal allocation policy ascending
 cdp run
 no lldp run   ! default
-
-! Access-interface (non-infrastructure):
- description ACCESS-{{ IF-ACCESS-VLAN }}
- switchport mode access
- switchport access vlan {{ IF-ACCESS-VLAN }}
- no cdp enable
-
-! Trunk-interface:
- description UPLINK-{{ IF-NEIGHBOUR }}
- switchport trunk encapsulation dot1q
- switchport mode trunk
- switchport trunk allowed vlan {{ IF-ALLOWED-VLANS }}
- cdp enable
 
 ! Management-interface
 interface {{ INT_MGMT }}   ! loopback on routers or SVI on switches
@@ -81,8 +58,6 @@ interface {{ INT_MGMT }}   ! loopback on routers or SVI on switches
  no ip directed-broadcast   ! default
  no shutdown
 
-ip default-gateway {{ DEFAULT-GATEWAY }}
- 
 no ip http server
 no ip http secure-server
 
@@ -136,12 +111,6 @@ line con 0
  login authentication default   ! default
  logging synchronous
  exec-timeout {{ LINE_EXEC_TIMEOUT }}
-line aux 0
- no password   ! default
- exec-timeout 0 1
- no exec  
- transport input none   ! default
- transport output none
 line vty 0 4
  access-class {{ ACL_VTY }} in
  transport input ssh
@@ -164,5 +133,9 @@ ntp server {{ NTP_SERVER }}
 !ntp trusted-key NTP-KEY-ID
 !ntp server ntp-server_ip_address key ntp_key_id
 !
+
+{% if DEV_TYPE == 'SWITCH' %}
+{% include 'Cisco_IOS_Template_Switch.j2' %}
+{% endif %}
 
 end
