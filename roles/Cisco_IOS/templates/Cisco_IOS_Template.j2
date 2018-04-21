@@ -4,6 +4,8 @@ no service config   ! default
 
 no service pad
 
+service nagle
+
 service tcp-keepalives-in
 service tcp-keepalives-out
 
@@ -29,6 +31,7 @@ aaa authentication login default local
 aaa authentication enable default enable
 
 clock timezone UTC 0 0   ! default
+clock summer-time UTC+1 recurring last Sun Mar 2:00 last Sun Oct 2:00
 
 no ip source-route
 no ip finger   ! default
@@ -47,6 +50,9 @@ archive
  write-memory   ! default
 
 spanning-tree mode rapid-pvst
+spanning-tree loopguard default
+spanning-tree portfast default
+spanning-tree portfast bpduguard default
 spanning-tree extend system-id
 spanning-tree vlan 1-4094 priority {{ STP_PRIORITY }}
 
@@ -54,6 +60,20 @@ vlan internal allocation policy ascending
 cdp run
 no lldp run   ! default
 
+! Access-interface (non-infrastructure):
+ description ACCESS-{{ IF-ACCESS-VLAN }}
+ switchport mode access
+ switchport access vlan {{ IF-ACCESS-VLAN }}
+ no cdp enable
+
+! Trunk-interface:
+ description UPLINK-{{ IF-NEIGHBOUR }}
+ switchport trunk encapsulation dot1q
+ switchport mode trunk
+ switchport trunk allowed vlan {{ IF-ALLOWED-VLANS }}
+ cdp enable
+
+! Management-interface
 interface {{ INT_MGMT }}   ! loopback on routers or SVI on switches
  ip address {{ INT_MGMT_IP_ADDRESS }} {{ INT_MGMT_IP_SUBNETMASK }}
  no ip redirects
@@ -61,6 +81,8 @@ interface {{ INT_MGMT }}   ! loopback on routers or SVI on switches
  no ip directed-broadcast   ! default
  no shutdown
 
+ip default-gateway {{ DEFAULT-GATEWAY }}
+ 
 no ip http server
 no ip http secure-server
 
@@ -77,6 +99,10 @@ ip access-list standard {{ ACL_SNMP }}
  permit host {{ MONITORING_SERVER }}
  deny   any log
 
+ip access-list standard {{ ACL_NTP }}
+ permit host {{ NTP_SERVER }}
+ deny   any log
+ 
 ip access-list standard {{ ACL_VTY }}
  permit host {{ MANAGEMENT_SERVER }}
  deny   any log
@@ -108,6 +134,7 @@ configuration mode exclusive
 
 line con 0
  login authentication default   ! default
+ logging synchronous
  exec-timeout {{ LINE_EXEC_TIMEOUT }}
 line aux 0
  no password   ! default
@@ -120,6 +147,7 @@ line vty 0 4
  transport input ssh
  exec-timeout {{ LINE_EXEC_TIMEOUT }}
  login authentication default   ! default
+ logging synchronous
 line vty 5 15
  no password   ! default
  exec-timeout 0 1
@@ -127,6 +155,7 @@ line vty 5 15
  transport input none
  transport output none
 !
+ntp access-group peer {{ ACL_NTP }}
 ntp source {{ INT_MGMT }}
 ntp server {{ NTP_SERVER }}
 # authenticated NTP, if available
